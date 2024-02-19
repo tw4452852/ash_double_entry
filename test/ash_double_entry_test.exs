@@ -277,24 +277,24 @@ defmodule AshDoubleEntryTest do
         |> Ash.Changeset.for_create(:open, %{identifier: "account_two", currency: "USD"})
         |> Api.create!()
 
+      Transfer
+      |> Ash.Changeset.for_create(:transfer, %{
+        amount: Money.new!(:USD, 20),
+        from_account_id: account_one.id,
+        to_account_id: account_two.id,
+        timestamp: now
+      })
+      |> Api.create!()
+
       transfer_1 =
         Transfer
         |> Ash.Changeset.for_create(:transfer, %{
           amount: Money.new!(:USD, 20),
-          from_account_id: account_one.id,
-          to_account_id: account_two.id,
-          timestamp: now
+          from_account_id: account_two.id,
+          to_account_id: account_one.id,
+          timestamp: DateTime.add(now, -2, :minute)
         })
         |> Api.create!()
-
-      Transfer
-      |> Ash.Changeset.for_create(:transfer, %{
-        amount: Money.new!(:USD, 20),
-        from_account_id: account_two.id,
-        to_account_id: account_one.id,
-        timestamp: DateTime.add(now, -2, :minute)
-      })
-      |> Api.create!()
 
       assert Money.equal?(
                Api.load!(account_one, :balance_as_of).balance_as_of,
@@ -310,12 +310,12 @@ defmodule AshDoubleEntryTest do
 
       assert Money.equal?(
                Api.load!(account_one, :balance_as_of).balance_as_of,
-               Money.new!(:USD, 20)
+               Money.new!(:USD, -20)
              )
 
       assert Money.equal?(
                Api.load!(account_two, :balance_as_of).balance_as_of,
-               Money.new!(:USD, -20)
+               Money.new!(:USD, 20)
              )
     end
 
